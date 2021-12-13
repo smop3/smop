@@ -11,13 +11,13 @@
 Installation
 ============
 
-``smop3`` is available from PyPI::
+``smop3`` is available from PyPI:
 
 .. code-block:: bash
 
   pip install smop3
 
-Developers can clone the GitHub repository and use editable installs::
+Developers can clone the GitHub repository and use editable installs:
 
 .. code-block:: bash
 
@@ -78,7 +78,7 @@ mean?  Probably nothing. YMMV.
 Running the test suite
 ======================
 
-The test suite uses Python's ``unittest`` module and can be executed with::
+The test suite uses Python's ``unittest`` module and can be executed with:
 
 .. code-block:: bash
 
@@ -88,9 +88,9 @@ Command-line options
 ====================
 
 The command line interface can be accessed using either the ``smop`` command,
-or if wrappers are unavailable on your system ``python -m smop`` can be used::
+or if wrappers are unavailable on your system ``python -m smop`` can be used:
 
-.. code-block:: bash
+..code-block:: bash
 
   python -m smop
 
