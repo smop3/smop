@@ -1,12 +1,5 @@
 # SMOP -- Simple Matlab/Octave to Python compiler
 # Copyright 2011-2016 Victor Leikehman
-
-from __future__ import print_function
-
-import py_compile
-import tempfile
-import fnmatch
-import tarfile
 import sys
 import os
 import traceback
@@ -86,3 +79,7 @@ def main():
             pass
     if nerrors:
         print("Errors:", nerrors)
+
+if __name__ == "__main__":
+    print("Running main")
+    main()

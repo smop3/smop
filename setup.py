@@ -22,7 +22,7 @@ setup(
     version=__VERSION__,
     entry_points={
         "console_scripts": [
-            "smop = smop.main:main",
+            "smop = smop.__main__:main",
         ],
     },
     packages=["smop"],
