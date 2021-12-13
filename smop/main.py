@@ -24,7 +24,7 @@ def print_header(fp):
         return
     # print("# Running Python %s" % sys.version, file=fp)
     print("# Generated with SMOP ", version.__version__, file=fp)
-    print("from libsmop import *", file=fp)
+    print("from smop.libsmop import *", file=fp)
     print("#", options.filename, file=fp)
 
 
