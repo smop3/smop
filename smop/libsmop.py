@@ -811,7 +811,7 @@ def function(f):
 
 
 def error(s):
-    raise s
+    raise Exception(s)
 
 
 def isreal(a):
