@@ -18,17 +18,20 @@ from . import resolve
 from . import backend
 from . import version
 
+
 def print_header(fp):
     if options.no_header:
         return
-    #print("# Running Python %s" % sys.version, file=fp)
+    # print("# Running Python %s" % sys.version, file=fp)
     print("# Generated with SMOP ", version.__version__, file=fp)
     print("from libsmop import *", file=fp)
     print("#", options.filename, file=fp)
 
+
 def main():
     if "M" in options.debug:
         import pdb
+
         pdb.set_trace()
     if not options.filelist:
         options.parser.print_help()
@@ -48,8 +51,7 @@ def main():
             if options.verbose:
                 print(i, options.filename)
             if not options.filename.endswith(".m"):
-                print("\tIgnored: '%s' (unexpected file type)" %
-                      options.filename)
+                print("\tIgnored: '%s' (unexpected file type)" % options.filename)
                 continue
             if basename(options.filename) in options.xfiles:
                 if options.verbose:
@@ -58,7 +60,7 @@ def main():
             buf = open(options.filename).read()
             buf = buf.replace("\r\n", "\n")
             # FIXME buf = buf.decode("ascii", errors="ignore")
-            stmt_list = parse.parse(buf if buf[-1] == '\n' else buf + '\n')
+            stmt_list = parse.parse(buf if buf[-1] == "\n" else buf + "\n")
 
             if not stmt_list:
                 continue
