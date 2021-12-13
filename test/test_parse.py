@@ -1,6 +1,6 @@
 import unittest
-import parse
-import node
+from smop import parse
+from smop import node
 
 
 class TestParse(unittest.TestCase):
