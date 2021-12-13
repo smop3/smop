@@ -22,7 +22,7 @@ def print_header(fp):
     print("except ImportError:", file=fp)
     print(
         "    raise ImportError('File compiled with `smop3`,",
-        "please install `smop3` to run it.')",
+        "please install `smop3` to run it.') from None",
         file=fp
     )
     print("#", options.filename, file=fp)
