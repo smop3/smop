@@ -17,7 +17,14 @@ def print_header(fp):
         return
     # print("# Running Python %s" % sys.version, file=fp)
     print("# Generated with SMOP ", version.__version__, file=fp)
-    print("from smop.libsmop import *", file=fp)
+    print("try:", file=fp)
+    print("    from smop.libsmop import *", file=fp)
+    print("except ImportError:", file=fp)
+    print(
+        "    raise ImportError('File compiled with `smop3`,",
+        "please install `smop3` to run it.')",
+        file=fp
+    )
     print("#", options.filename, file=fp)
 
 
