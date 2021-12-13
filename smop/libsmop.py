@@ -390,9 +390,6 @@ def concat(args):
     >>> concat([1,2,3,4,5] , [1,2,3,4,5]])
     [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]
     """
-    import pdb
-
-    pdb.set_trace()
     t = [matlabarray(a) for a in args]
     return np.concatenate(t)
 
