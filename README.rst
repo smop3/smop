@@ -90,7 +90,7 @@ Command-line options
 The command line interface can be accessed using either the ``smop`` command,
 or if wrappers are unavailable on your system ``python -m smop`` can be used:
 
-..code-block:: bash
+.. code-block:: bash
 
   python -m smop
 
@@ -114,9 +114,18 @@ or if wrappers are unavailable on your system ``python -m smop`` can be used:
       -s --strict             Stop on the first error
       -v --verbose
 
+
+To convert matlab code in direcotry c:\matlab to c:\python, the file use GBK encoding instead of utf8.
+
+.. code-block:: bash
+
+  smop -v -N -e gbk -g "c:\matlab\*.m" -d "c:\python"
+
+
 Change Log
 ====================
-* 0.42-beta
+
+* 0.42-beta [bob.yang]
 
     support -g "*.m" pattern of command argument.
 
