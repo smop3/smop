@@ -102,7 +102,7 @@ or if wrappers are unavailable on your system ``python -m smop`` can be used:
       -V --version
       -g PATTERN, --glob-pattern PATTERN
                               Apply unix glob pattern to the input file list or to files. For
-                              example -g 'octave-4.0.2/*.m
+                              example -g 'octave-4.0.2/*.m'
       -e ENCODING, --encoding ENCODING
                               File encoding, for example -e GBK. Default is 'utf-8'.
       -d OUTPUT_DIR, --output-directory OUTPUT_DIR

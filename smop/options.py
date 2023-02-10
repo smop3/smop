@@ -95,7 +95,7 @@ parser.add_argument(
     type=str,
     help="""
 Apply unix glob pattern to the input file list or to files. For
-example -g 'octave-4.0.2/*.m""",
+example -g 'octave-4.0.2/*.m'""",
 )
 
 parser.add_argument(
