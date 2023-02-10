@@ -1,15 +1,16 @@
 # SMOP -- Simple Matlab/Octave to Python compiler
 # Copyright 2011-2016 Victor Leikehman
+import glob
 import sys
 import os
 import traceback
 from os.path import basename, splitext
 
-from . import options
-from . import parse
-from . import resolve
-from . import backend
-from . import version
+from smop import options
+from smop import parse
+from smop import resolve
+from smop import backend
+from smop import version
 
 
 def print_header(fp):
@@ -33,6 +34,9 @@ def main():
         import pdb
 
         pdb.set_trace()
+    # implement glob pattern
+    if options.glob_pattern:
+        options.filelist += glob.glob(options.glob_pattern)
     if not options.filelist:
         options.parser.print_help()
         return

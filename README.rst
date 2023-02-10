@@ -113,3 +113,10 @@ or if wrappers are unavailable on your system ``python -m smop`` can be used:
       -o- --output=-          Use standard output
       -s --strict             Stop on the first error
       -v --verbose
+
+Change Log
+====================
+* 0.42-beta
+
+    support -g "*.m" pattern of command argument.
+
