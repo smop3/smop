@@ -17,6 +17,7 @@ def print_header(fp):
     if options.no_header:
         return
     # print("# Running Python %s" % sys.version, file=fp)
+    print("# -*- encoding: %s -*-" % options.encoding, file=fp)
     print("# Generated with SMOP ", version.__version__, file=fp)
     print("try:", file=fp)
     print("    from smop.libsmop import *", file=fp)
@@ -61,7 +62,7 @@ def main():
                 if options.verbose:
                     print("\tExcluded: '%s'" % options.filename)
                 continue
-            buf = open(options.filename).read()
+            buf = open(options.filename, encoding=options.encoding).read()
             buf = buf.replace("\r\n", "\n")
             # FIXME buf = buf.decode("ascii", errors="ignore")
             stmt_list = parse.parse(buf if buf[-1] == "\n" else buf + "\n")
@@ -74,7 +75,13 @@ def main():
                 s = backend.backend(stmt_list)
             if not options.output:
                 f = splitext(basename(options.filename))[0] + ".py"
-                with open(f, "w") as fp:
+                output_dir = "."
+                if options.output_directory:
+                    output_dir = options.output_directory
+                f = output_dir + "/" + f
+                if options.verbose:
+                    print("output: ", f)
+                with open(f, "w", encoding=options.encoding) as fp:
                     print_header(fp)
                     fp.write(s)
             else:

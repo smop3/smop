@@ -120,3 +120,6 @@ Change Log
 
     support -g "*.m" pattern of command argument.
 
+    support -e --encoding argument, to specify file encoding.
+
+    support -d --output-directory argument, to specify output directory.

@@ -32,6 +32,17 @@ Example:
 parser.add_argument("filelist", nargs="*", metavar="file.m", type=str)
 
 parser.add_argument(
+    "-e",
+    "--encoding",
+    metavar="ENCODING",
+    type=str,
+    default='utf-8',
+    help="""
+File encoding, for example -e GBK. Default is 'utf-8'.
+""",
+)
+
+parser.add_argument(
     "-A",
     "--no-analysis",
     action="store_true",
@@ -127,6 +138,21 @@ derived from input file names by replacing ".m" with ".py".  For example,
     $ smop FILE1.m FILE2.m FILE3.m
 
 generates files FILE1.py FILE2.py and FILE3.py
+""",
+)
+
+parser.add_argument(
+    "-d",
+    "--output-directory",
+    metavar="OUTPUT_DIR",
+    type=str,
+    help="""
+Write the results to directory. If not specified explicitly, output file names are
+derived from input file names by replacing ".m" with ".py".  For example,
+
+    $ smop -d output/
+
+generates files output/FILE1.py output/FILE2.py and output/FILE3.py
 """,
 )
 
