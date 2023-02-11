@@ -141,3 +141,5 @@ Change Log
     support -e --encoding argument, to specify file encoding.
 
     support -d --output-directory argument, to specify output directory.
+
+    add normcdf(), normpdf(), fix size(), fprintf() bug.

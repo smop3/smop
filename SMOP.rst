@@ -147,10 +147,10 @@ Term T is::
 
 Terms end with::
 
-  1. an alphanumeric charater \w
+  1. an alphanumeric character \w
   2. single quote (in octave also double-quote)
   3. right parenthesis, bracket, or brace
-  4. a dot (after a number, such as 3. 
+  4. a dot (after a number, such as 3).
 
 The pattern for whitespace accounts for ellipsis as a whitespace, and
 for the trailing junk.

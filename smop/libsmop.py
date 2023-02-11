@@ -1,7 +1,8 @@
 # SMOP compiler runtime support library
 # Copyright 2014 Victor Leikehman
-
+# Copyright 2023 Bob Yang
 # MIT license
+import io
 
 import numpy
 from numpy import sqrt, prod, exp, log, dot, multiply, inf
@@ -25,7 +26,10 @@ except:
 import unittest
 from scipy.special import gamma
 from numpy import rint as fix
+from scipy.stats import norm
 
+def normcdf(x): return norm.cdf(x)
+def normpdf(x): return norm.pdf(x)
 
 def isvector_or_scalar(a):
     """
@@ -497,7 +501,7 @@ def fflush(fp):
 
 
 def fprintf(fp, fmt, *args):
-    if not isinstance(fp, file):
+    if not isinstance(fp, io.IOBase):
         fp = stdout
     fp.write(str(fmt) % args)
 
@@ -712,7 +716,7 @@ def size(a, b=0, nargout=1):
     matlabarray([[4, 4]])
     """
     s = np.asarray(a).shape
-    if s is ():
+    if s == ():
         return 1 if b else (1,) * nargout
     # a is not a scalar
     try:

@@ -91,7 +91,7 @@ D. Update to create
   around by inserting assignments into the original matlab code::
 
       >>> a=[]
-      >>> a(17_=42
+      >>> a(17)=42
 
 -------------------------------------
 
