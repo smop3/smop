@@ -12,22 +12,27 @@ from smop import resolve
 from smop import backend
 from smop import version
 
+from textwrap import dedent
+
 
 def print_header(fp):
     if options.no_header:
         return
     # print("# Running Python %s" % sys.version, file=fp)
-    print("# -*- encoding: %s -*-" % options.encoding, file=fp)
-    print("# Generated with SMOP ", version.__version__, file=fp)
-    print("try:", file=fp)
-    print("    from smop.libsmop import *", file=fp)
-    print("except ImportError:", file=fp)
-    print(
-        "    raise ImportError('File compiled with `smop3`,",
-        "please install `smop3` to run it.') from None",
-        file=fp
-    )
-    print("#", options.filename, file=fp)
+    # context = locals()
+    # context.update(options=options, version=version)
+    template = f"""# -*- encoding: {options.encoding} -*-
+# Generated with SMOP {version.__version__}
+try:
+    from smop.libsmop import *
+except ImportError:
+    raise ImportError('File compiled with `smop3`, please install `smop3` to run it.') from None
+# {options.filename}
+
+# simulate matlab workspace
+workspace_ = locals()
+"""
+    print(template, file=fp)
 
 
 def main():
@@ -97,6 +102,7 @@ def main():
             pass
     if nerrors:
         print("Errors:", nerrors)
+
 
 if __name__ == "__main__":
     print("Running main")
