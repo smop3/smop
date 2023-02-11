@@ -201,7 +201,7 @@ string and cellarray literals, and upon return from any function
 -- either library or user defined.  This looks terrible.
 
 Another possibility is to wrap the function arguments inside the
-function
+function.
 
 Base-one indexing
 -----------------
@@ -348,6 +348,27 @@ one, like here::
 
   octave> "hello""world"
   hello"world
+
+Load Matlab file
+----------------
+
+The matlab load() function will load the .mat data file into workspace. While python have no such concept of workspace.
+The workspace like local namespace of python.
+
+If the load() function call assign to result variable then the loaded variable should be fields of the result object.
+
+Calling statement have result assignment:
+
+    result = load("a.mat")
+
+If the load() function call do not assign to any result variable then the loaded variable should be put into the local
+namespace.
+
+Calling statement have no result assignment:
+
+    load("a.mat")
+
+Implement notes: Python can not modify local variables. So we have to define a special 'workspace' variable resolution
 
 ----------------------------------------------------------------------
 

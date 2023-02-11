@@ -28,6 +28,15 @@ from scipy.special import gamma
 from numpy import rint as fix
 from scipy.stats import norm
 
+def close(*args):
+    pass
+
+def close_(*args):
+    pass
+
+def clear(*args):
+    pass
+
 def normcdf(x): return norm.cdf(x)
 def normpdf(x): return norm.pdf(x)
 
