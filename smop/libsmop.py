@@ -157,7 +157,7 @@ class matlabarray(np.ndarray):
         elif isinstance(ix, slice):
             n = ix.stop
         elif isinstance(ix, (list, np.ndarray)):
-            n = max(ix) + 1
+            n = int(max(ix)) + 1
         else:
             assert 0, ix
         if not isinstance(n, int):
@@ -587,10 +587,8 @@ def length(a):
 
 
 try:
-
     def load(a):
         return loadmat(a)  # FIXME
-
 except:
     pass
 
