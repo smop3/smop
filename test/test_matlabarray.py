@@ -1,4 +1,3 @@
-import unittest
 from smop.libsmop import *
 
 
@@ -11,7 +10,9 @@ class test_matlabarray(unittest.TestCase):
         a[a.shape[0] + 1, [1, 2, 3]] = [123, 456, 789]
         a[a.shape[0] + 1, [1, 2, 3]] = [123, 456, 789]
         a[a.shape[0] + 1, [1, 2, 3]] = [123, 456, 789]
-        self.assertTrue(isequal(a, [[123, 456, 789], [123, 456, 789], [123, 456, 789]]))
+        self.assertTrue(isequal(a, [[123, 456, 789],
+                                    [123, 456, 789],
+                                    [123, 456, 789]]))
 
     def test020(self):
         """Two-dimensional assignment to []
@@ -31,18 +32,37 @@ class test_matlabarray(unittest.TestCase):
         a[a.shape[0] + 1, 1:3] = 123
         a[a.shape[0] + 1, 1:3] = 123
         # print a.shape
-        self.assertTrue(isequal(a, [[123, 123, 123], [123, 123, 123], [123, 123, 123]]))
+        self.assertTrue(isequal(a, [[123, 123, 123],
+                                    [123, 123, 123],
+                                    [123, 123, 123]]))
 
-    # @unittest.skip("FIXME")
     def test040(self):
+        """Insert rows"""
         a = matlabarray()
-        with self.assertRaises(IndexError):
-            a[a.shape[0] + 1, :] = 123
-            a[a.shape[0] + 1, :] = 123
-            a[a.shape[0] + 1, :] = 123
-            self.assertTrue(isequal(a, [[123], [123], [123]]))
+        a[a.shape[0] + 1, :] = 123
+        a[a.shape[0] + 1, :] = 123
+        a[a.shape[0] + 1, :] = 123
+        self.assertTrue(isequal(a, [[123],
+                                    [123],
+                                    [123]]))
+        # the same as upper case
+        a = matlabarray()
+        a[1, :] = 123
+        a[2, :] = 123
+        a[3, :] = 123
+        self.assertTrue(isequal(a, [[123],
+                                    [123],
+                                    [123]]))
+        # insert rows
+        a = matlabarray()
+        a[1, :] = [123, 456]
+        a[2, :] = [123, 456]
+        a[3, :] = [123, 456]
+        self.assertTrue(isequal(a, [[123, 456],
+                                    [123, 456],
+                                    [123, 456]]))
 
-    @unittest.skip("wonders of matlab")
+    # @unittest.skip("wonders of matlab")
     def test050(self):
         """
         Compare to test060
@@ -63,7 +83,7 @@ class test_matlabarray(unittest.TestCase):
         self.assertTrue(isequal(a.item(0), 99))
 
     def test060(self):
-        """One-dimensional assignment to empty array
+        """One-dimensional assignment to empty array get empty array. The same as matlab.
 
         octave> a=[]
         a = []
@@ -73,9 +93,9 @@ class test_matlabarray(unittest.TestCase):
         a = []
         """
         a = matlabarray()
-        with self.assertRaises(IndexError):
-            a[:] = 99
-            self.assertTrue(isempty(a))
+        #with self.assertRaises(IndexError):
+        a[:] = 99
+        self.assertTrue(isempty(a))
 
     # @unittest.skip("wonders of matlab")
     def test062(self):
@@ -113,7 +133,7 @@ class test_matlabarray(unittest.TestCase):
         c = []
         """
         a = matlabarray()
-        a[1 : a.shape[0]] = 9
+        a[1: a.shape[0]] = 9
         self.assertTrue(isempty(a))
 
     @unittest.skip("wonders of matlab")
@@ -151,10 +171,33 @@ class test_matlabarray(unittest.TestCase):
         self.assertTrue(isequal(a, [[11, 22, 33, 44, 55, 66, 77, 88, 99]]))
 
     def test100(self):
-        a = matlabarray([[1, 3], [2, 4]])
+        """Test insert columns."""
+        a = matlabarray([[1, 3],
+                         [2, 4]])
         # a[: , a.shape[1]+1] = [5,6]
         a[:, 3] = [5, 6]
-        self.assertTrue(isequal(a, [[1, 3, 5], [2, 4, 6]]))
+        self.assertTrue(isequal(a, [[1, 3, 5],
+                                    [2, 4, 6]]))
+
+        # Insert at any column index with 0 padding columns.
+        b = matlabarray()
+        col = matlabarray([5, 6])
+        b[:col.shape[1], 2] = col
+        self.assertTrue(isequal(b, [[0, 5],
+                                    [0, 6]]))
+        # Insert at any column index with 0 padding columns.
+        b = matlabarray()
+        col = matlabarray([5, 6]).transpose()
+        b[:col.shape[0], 2] = col
+        self.assertTrue(isequal(b, [[0, 5],
+                                    [0, 6]]))
+
+        # Insert at any column index with 0 padding columns.
+        b = matlabarray()
+        col = matlabarray([5, 6]).transpose()
+        b[:, 2] = col
+        self.assertTrue(isequal(b, [[0, 5],
+                                    [0, 6]]))
 
     def test110(self):
         a = zeros(4, 4, dtype=int)

@@ -370,6 +370,15 @@ Calling statement have no result assignment:
 
 Implement notes: Python can not modify local variables. So we have to define a special 'workspace' variable resolution
 
+Insert column
+-------------
+
+Support matlab code like: ::
+
+    data_geo = []
+    data_geo(:,1)=col1;
+    data_geo(:,2)=col2;
+
 ----------------------------------------------------------------------
 
 ===============

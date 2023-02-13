@@ -28,17 +28,24 @@ from scipy.special import gamma
 from numpy import rint as fix
 from scipy.stats import norm
 
+
 def close(*args):
     pass
+
 
 def close_(*args):
     pass
 
+
 def clear(*args):
     pass
 
+
 def normcdf(x): return norm.cdf(x)
+
+
 def normpdf(x): return norm.pdf(x)
+
 
 def isvector_or_scalar(a):
     """
@@ -81,8 +88,8 @@ class matlabarray(np.ndarray):
     def __new__(cls, a=[], dtype=None):
         obj = (
             np.array(a, dtype=dtype, copy=False, order="F", ndmin=2)
-            .view(cls)
-            .copy(order="F")
+                .view(cls)
+                .copy(order="F")
         )
         if obj.size == 0:
             obj.shape = (0, 0)
@@ -107,8 +114,12 @@ class matlabarray(np.ndarray):
             if ix.__class__ is end:
                 indices.append(self.shape[i] - 1 + ix.n)
             elif ix.__class__ is slice:
+                # To support 'empty matrix' insert columns, we should use slice like 'a[:len(col), 2] = col'.
                 if self.size == 0 and ix.stop is None:
-                    raise IndexError
+                    # raise IndexError
+                    # use empty array as ':' range index
+                    indices.append(np.empty(0))
+                    continue
                 if len(index) == 1:
                     n = self.size
                 else:
@@ -124,7 +135,9 @@ class matlabarray(np.ndarray):
                 except:
                     indices.append(np.asarray(ix).astype("int32") - 1)
         if len(indices) == 2 and isvector(indices[0]) and isvector(indices[1]):
+            # as column vector (N,1)
             indices[0].shape = (-1, 1)
+            # as row vector (N,)
             indices[1].shape = (-1,)
         return tuple(indices)
 
@@ -152,12 +165,18 @@ class matlabarray(np.ndarray):
         self.__setitem__(index, value)
 
     def sizeof(self, ix):
+        """size of index
+        @return -1 if index is empty array.
+        """
         if isinstance(ix, int):
             n = ix + 1
         elif isinstance(ix, slice):
             n = ix.stop
         elif isinstance(ix, (list, np.ndarray)):
-            n = int(max(ix)) + 1
+            if len(ix) == 0:
+                n = -1
+            else:
+                n = int(max(ix)) + 1
         else:
             assert 0, ix
         if not isinstance(n, int):
@@ -165,6 +184,14 @@ class matlabarray(np.ndarray):
         return n
 
     def __setitem__(self, index, value):
+        """Support insert at any column index, padds with 0-column:
+            a = matlabarray()
+            a[:, 2] = column(1,2,3)
+        Get:
+            a[[0, 1],
+              [0, 2],
+              [0, 3]]
+        """
         # import pdb; pdb.set_trace()
         indices = self.compute_indices(index)
         try:
@@ -174,10 +201,39 @@ class matlabarray(np.ndarray):
                 np.asarray(self).__setitem__(indices, value)
         except (ValueError, IndexError):
             # import pdb; pdb.set_trace()
+
+            # if the self matrix is empty
             if not self.size:
-                new_shape = [self.sizeof(s) for s in indices]
+                # One-dimensional assignment to empty array should get empty array.
+                if len(indices) == 1 and self.sizeof(indices[0]) < 0:
+                    if isvector(value) or isinstance(value, (list, tuple, slice)):
+                        raise ValueError("Can not assign, right-value must have the same size as left-value!")
+                    # don't assign
+                    return
+                new_shape = []
+                new_indices = []
+                # deal with empty index array
+                for i, s in enumerate(indices):
+                    size_of_index = self.sizeof(s)
+                    if size_of_index < 0:
+                        # empty array index, use value shape size or length of list
+                        if isinstance(value, np.ndarray):
+                            size_of_index = value.shape[i]
+                        elif isscalar(value):
+                            size_of_index = 1
+                        else:
+                            size_of_index = len(value)
+                        new_indices.append(np.arange(0, size_of_index, 1, dtype=int))
+                    else:
+                        new_indices.append(s)
+                    new_shape.append(size_of_index)
+                # to increase matrix space, resize self to the same shape as indices
                 self.resize(new_shape, refcheck=0)
-                np.asarray(self).__setitem__(indices, value)
+                # if value is column vector, make it row vector, because python slice always be row vector
+                row_vector = value
+                if isinstance(value, np.ndarray) and value.shape[0] > 1:
+                    row_vector = value.transpose()
+                np.asarray(self).__setitem__(tuple(new_indices), row_vector)
             elif len(indices) == 1:
                 # One-dimensional resize is only implemented for
                 # two cases:
@@ -304,8 +360,8 @@ class cellstr(matlabarray):
             np.array(
                 ["".join(s) for s in a], dtype=object, copy=False, order="C", ndmin=2
             )
-            .view(cls)
-            .copy(order="F")
+                .view(cls)
+                .copy(order="F")
         )
         if obj.size == 0:
             obj.shape = (0, 0)
@@ -345,8 +401,8 @@ class char(matlabarray):
             a = "".join([chr(c) for c in a])
         obj = (
             np.array(list(a), dtype="|S1", copy=False, order="F", ndmin=2)
-            .view(cls)
-            .copy(order="F")
+                .view(cls)
+                .copy(order="F")
         )
         if obj.size == 0:
             obj.shape = (0, 0)
@@ -701,7 +757,6 @@ def ravel(a):
 
 
 def roots(a):
-
     return matlabarray(np.roots(np.asarray(a).ravel()))
 
 
