@@ -163,7 +163,11 @@ def _backend(self, level=0):
                 self.args[1]._backend(),
             )
     if self.op == ":":
-        return "arange(%s)" % self.args._backend()
+        # support `a(:,1)=[1,2,3]` => `a[:,1]=[1,2,3]`
+        if len(self.args):
+            return "arange(%s)" % self.args._backend()
+        else:
+            return ":"
 
     if self.op == "end":
         #        if self.args:
@@ -334,7 +338,8 @@ def _backend(self, level=0):
     # size([])
     # 0 0
     if not self.args:
-        return "[]"
+        # create matlabarray object
+        return "matlabarray()"
     elif any(a.__class__ is node.string for a in self.args):
         return " + ".join(a._backend() for a in self.args)
     else:

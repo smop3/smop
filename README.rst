@@ -143,3 +143,10 @@ Change Log
     support -d --output-directory argument, to specify output directory.
 
     add normcdf(), normpdf(), fix size(), fprintf() bug.
+
+
+TODO
+====================
+
+* 支持 a[:, 1] = [1,2,3] 这样插入列的方式
+* 支持 a[1, :] = [1,2,3] 这样插入行的方式

@@ -1,3 +1,4 @@
+# -*- encoding: utf8 -*-
 # smop -- Matlab to Python compiler
 # Copyright 2011-2013 Victor Leikehman
 """
@@ -16,6 +17,10 @@ symtab is a temporary variable, which maps
 variable names (strings) to sets of ident
 instances, which possibly define the variable.
 It is used in if_stmt, for_stmt, and while_stmt.
+
+杨波：这个模块的作用是被 parser 调用，生成AST抽象语法树、语句列表，供后端 backend.py 使用。
+AST 语法树用 networkx 来创建。
+
 """
 
 import copy
@@ -37,7 +42,8 @@ def as_networkx(t):
                     if v.__class__ is node.ident:
                         vv = "%s_%s_%s" % (v.name, v.lineno, v.column)
                         G.add_node(vv, ident=v)
-                        if u.lexpos < v.lexpos:
+                        # fix issue that u.lexpos or v.lexpos is None
+                        if u.lexpos and v.lexpos and u.lexpos < v.lexpos:
                             G.add_edge(uu, vv, color="red")
                         else:
                             G.add_edge(uu, vv, color="black")

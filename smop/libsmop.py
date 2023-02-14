@@ -1,3 +1,4 @@
+# -*- encoding: utf8 -*-
 # SMOP compiler runtime support library
 # Copyright 2014 Victor Leikehman
 # Copyright 2023 Bob Yang
@@ -186,7 +187,7 @@ class matlabarray(np.ndarray):
     def __setitem__(self, index, value):
         """Support insert at any column index, padds with 0-column:
             a = matlabarray()
-            a[:, 2] = column(1,2,3)
+            a[:, 2] = [1,2,3]
         Get:
             a[[0, 1],
               [0, 2],
@@ -199,7 +200,7 @@ class matlabarray(np.ndarray):
                 np.asarray(self).reshape(-1, order="F").__setitem__(indices, value)
             else:
                 np.asarray(self).__setitem__(indices, value)
-        except (ValueError, IndexError):
+        except (ValueError, IndexError) as exception:
             # import pdb; pdb.set_trace()
 
             # if the self matrix is empty
@@ -260,14 +261,61 @@ class matlabarray(np.ndarray):
                     new_shape = [(1 if s == 1 else n) for s in self.shape]
                 self.resize(new_shape, refcheck=0)
                 np.asarray(self).reshape(-1, order="F").__setitem__(indices, value)
-            else:
+            else:   # self is not empty and indices length > 1
                 new_shape = list(self.shape)
-                if self.flags["C_CONTIGUOUS"]:
+                # print(f"\n--->new_shape={new_shape}, indices={self.sizeof(indices[0]), self.sizeof(indices[1])}")
+                # 杨波：下面这段话的意思是说，如果是 c连续布局，则可以添加行，添加行后矩阵原有形状会保持；
+                # 如果是 fortran连续布局，则可以添加列，添加列后矩阵原有形状会保持；
+                # 如果不是这样，那么 resize 添加0后，会改变矩阵内容，原矩阵会被改变。
+                # 所以我们需要根据是加行，还是加列，来修改‘连续性’。
+                # if self.flags["C_CONTIGUOUS"]:
+                #     new_shape[0] = self.sizeof(indices[0])
+                # elif self.flags["F_CONTIGUOUS"]:
+                #     new_shape[-1] = self.sizeof(indices[-1])
+                if len(new_shape) > 2:
+                    raise IndexError("Can only support 2-dimension array to insert row or column vector!")
+                # 加‘行’的情况
+                add_row = False
+                if self.sizeof(indices[0]) > new_shape[0]:
+                    add_row = True
+                # 加‘列’的情况
+                add_col = False
+                if self.sizeof(indices[1]) > new_shape[1]:
+                    add_col = True
+                # 不允许同时加行和列
+                if add_row and add_col:
+                    raise IndexError("Can not increase row and column at same time!")
+                # if value is column vector, make it row vector, because python slice always be row vector
+                row_vector = value
+                if isinstance(value, np.ndarray) and value.shape[0] > 1:
+                    row_vector = value.transpose()
+                if add_row:
                     new_shape[0] = self.sizeof(indices[0])
-                elif self.flags["F_CONTIGUOUS"]:
-                    new_shape[-1] = self.sizeof(indices[-1])
-                self.resize(new_shape, refcheck=0)
-                np.asarray(self).__setitem__(indices, value)
+                    if not self.flags["C_CONTIGUOUS"]:
+                        # 强制变为 C_CONTIGUOUS
+                        c = np.asarray(self, order='C')
+                        c.resize(new_shape, refcheck=0)
+                        c.__setitem__(indices, row_vector)
+                        self.resize(new_shape, refcheck=0)
+                        np.copyto(self, c)
+                    else:
+                        self.resize(new_shape, refcheck=0)
+                        np.asarray(self).__setitem__(indices, row_vector)
+                elif add_col:
+                    new_shape[1] = self.sizeof(indices[1])
+                    if not self.flags["F_CONTIGUOUS"]:
+                        # 强制变为 F_CONTIGUOUS
+                        c = np.asarray(self, order='F')
+                        c.resize(new_shape, refcheck=0)
+                        c.__setitem__(indices, row_vector)
+                        self.resize(new_shape, refcheck=0)
+                        np.copyto(self, c)
+                    else:
+                        self.resize(new_shape, refcheck=0)
+                        np.asarray(self).__setitem__(indices, row_vector)
+                else:
+                    # 只是不能设置 列向量 value 才走到这里
+                    np.asarray(self).__setitem__(indices, row_vector)
 
     def __repr__(self):
         return self.__class__.__name__ + repr(np.asarray(self))[5:]

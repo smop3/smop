@@ -1,3 +1,4 @@
+# -*- encoding: utf8 -*-
 from smop.libsmop import *
 
 
@@ -93,7 +94,7 @@ class test_matlabarray(unittest.TestCase):
         a = []
         """
         a = matlabarray()
-        #with self.assertRaises(IndexError):
+        # with self.assertRaises(IndexError):
         a[:] = 99
         self.assertTrue(isempty(a))
 
@@ -198,6 +199,24 @@ class test_matlabarray(unittest.TestCase):
         b[:, 2] = col
         self.assertTrue(isequal(b, [[0, 5],
                                     [0, 6]]))
+        b[:, 3] = col
+        print("\n")
+        print(b)
+        self.assertTrue(isequal(b, [[0, 5, 5],
+                                    [0, 6, 6]]))
+        # 跳跃式插入列
+        b[:, 5] = col
+        print("\n")
+        print(b)
+        self.assertTrue(isequal(b, [[0, 5, 5, 0, 5],
+                                    [0, 6, 6, 0, 6]]))
+
+        # 替换列
+        b[:, 1] = col
+        print("\n")
+        print(b)
+        self.assertTrue(isequal(b, [[5, 5, 5, 0, 5],
+                                    [6, 6, 6, 0, 6]]))
 
     def test110(self):
         a = zeros(4, 4, dtype=int)
