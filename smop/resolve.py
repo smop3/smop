@@ -50,11 +50,12 @@ def as_networkx(t):
     return G
 
 
-def resolve(t, symtab=None, fp=None, func_name=None):
+def resolve(statement_list, symtab=None, fp=None, func_name=None):
+    """解析出变量，并给变量添加类型说明，但生成代码时并没有用到"""
     if symtab is None:
-        symtab = {}
-    do_resolve(t, symtab)
-    G = as_networkx(t)
+        symtab = {}     # 存放变量名
+    do_resolve(statement_list, symtab)
+    G = as_networkx(statement_list)
     for n in G.nodes():
         u = G.nodes[n]["ident"]
         if u.props:

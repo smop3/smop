@@ -1,3 +1,4 @@
+# -*- encoding: utf8 -*-
 # smop -- Simple Matlab to Python compiler
 # Copyright 2011-2016 Victor Leikehman
 
@@ -38,8 +39,8 @@ optable = {
 }
 
 
-def backend(t, *args, **kwargs):
-    return t._backend(level=1, *args, **kwargs)
+def backend(statement_list, *args, **kwargs):
+    return statement_list._backend(level=0, *args, **kwargs)
 
 
 # Sometimes user's variable names in the matlab code collide with Python
@@ -65,6 +66,7 @@ reserved = set(
     len
     """.split()
 )
+
 
 # acos  asin atan  cos e
 # exp   fabs floor log log10
@@ -232,8 +234,7 @@ def _backend(self, level=0):
 def _backend(self, level=0):
     self.args.append(node.ident("*args"))
     self.args.append(node.ident("**kwargs"))
-    s = """
-@function
+    s = """@function
 def %s(%s):
     varargin = %s.varargin
     nargin = %s.nargin
@@ -378,15 +379,26 @@ def _backend(self, level=0):
         return "return %s" % self.ret._backend()
 
 
+# 代码语句列表，也是编译backend的入口
 @extend(node.stmt_list)
 def _backend(self, level=0):
-    for t in self:
-        if not isinstance(t, (node.null_stmt, node.comment_stmt)):
+    # 跳过注释和空语句行
+    for statement in self:
+        if not isinstance(statement, (node.null_stmt, node.comment_stmt)):
             break
+    # 如果全部语句都是空，那么添加一条 pass 语句
     else:
         self.append(node.pass_stmt())
-    sep = "\n" + indent * level
-    return sep + sep.join([t._backend(level) for t in self])
+    code = ""
+    # matlab 函数通常占用整个文件，所以这里偷懒，直接设置 level=1 开始，即总是缩进
+    for statement in self:
+        sep = "\n" + indent * level
+        code += (sep + statement._backend(level))
+        # 函数定义后的语句都增加缩进
+        if isinstance(statement, node.func_stmt):
+            level += 1
+    # return sep + sep.join([statement._backend(level) for statement in self])
+    return code
 
 
 @extend(node.string)
