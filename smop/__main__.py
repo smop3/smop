@@ -1,3 +1,4 @@
+# -*- encoding: utf8 -*-
 # SMOP -- Simple Matlab/Octave to Python compiler
 # Copyright 2011-2016 Victor Leikehman
 import glob
@@ -22,7 +23,7 @@ def print_header(fp):
     # context = locals()
     # context.update(options=options, version=version)
     template = f"""# -*- encoding: {options.encoding} -*-
-# Generated with SMOP {version.__version__}
+# Generated with SMOP {version.__version__} Improved by 杨波@塔尔旺科技 2023
 try:
     from smop.libsmop import *
 except ImportError:
