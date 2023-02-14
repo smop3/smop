@@ -144,9 +144,11 @@ Change Log
 
     add normcdf(), normpdf(), fix size(), fprintf() bug.
 
+    支持 a[:, 1] = [1,2,3] 这样插入列的方式
+
+    支持 a[1, :] = [1,2,3] 这样插入行的方式
 
 TODO
 ====================
 
-* 支持 a[:, 1] = [1,2,3] 这样插入列的方式
-* 支持 a[1, :] = [1,2,3] 这样插入行的方式
+* 修正 function-call 而非 array-ref 的问题，即将 array下标访问 当成了 函数访问。
