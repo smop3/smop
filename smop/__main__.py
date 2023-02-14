@@ -50,7 +50,7 @@ def main():
     if options.output == "-":
         fp = sys.stdout
     elif options.output:
-        fp = open(options.output, "w")
+        fp = open(options.output, "w", encoding=options.encoding)
     else:
         fp = None
     if fp:
