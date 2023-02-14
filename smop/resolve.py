@@ -56,6 +56,9 @@ def resolve(statement_list, symtab=None, fp=None, func_name=None):
         symtab = {}     # 存放变量名
     do_resolve(statement_list, symtab)
     G = as_networkx(statement_list)
+    # R ref    =...a  or  =...a(b)
+    # D def    a=...  or   [a,b,c]=...
+    # U update a(b)=...  or  [a(b) c(d)]=...
     for n in G.nodes():
         u = G.nodes[n]["ident"]
         if u.props:

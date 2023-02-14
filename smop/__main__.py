@@ -14,6 +14,7 @@ from smop import backend
 from smop import version
 
 from textwrap import dedent
+from rewrite import peep
 
 
 def print_header(fp):
@@ -78,6 +79,8 @@ def main():
             if not options.no_resolve:
                 G = resolve.resolve(stmt_list)
             if not options.no_backend:
+                # 重写 ast 树
+                peep(stmt_list)
                 s = backend.backend(stmt_list)
             if not options.output:
                 f = splitext(basename(options.filename))[0] + ".py"

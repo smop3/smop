@@ -3,8 +3,8 @@
 
 import copy
 
-from . import node
-from .node import extend
+from smop import node
+from node import extend
 
 
 def graphviz(t, fp, func_name):
@@ -25,11 +25,11 @@ def graphviz(t, fp, func_name):
 
 
 def peep(parsetree):
-    for u in parsetree:
+    for u in node.postorder(parsetree):
         to_arrayref(u)
-        colon_indices_and_expressions(u)
-        end_expressions(u)
-        let_statement(u)
+        # colon_indices_and_expressions(u)
+        # end_expressions(u)
+        # let_statement(u)
 
 
 def to_arrayref(u):
@@ -40,7 +40,7 @@ def to_arrayref(u):
     """
     if u.__class__ is node.funcall:
         try:
-            if u.func_expr.props in "UR":  # upd,ref
+            if u.func_expr.props in "URD":  # upd,ref,def
                 u.__class__ = node.arrayref
         except:
             pass  # FIXME

@@ -5,8 +5,9 @@ from __future__ import print_function
 from collections import namedtuple
 import copy, sys, inspect
 
-from .recipes import recordtype
-from . import options
+from recipes import recordtype
+import options
+import smop
 
 # def preorder(u):
 #     if isinstance(u,traversable):
@@ -34,7 +35,7 @@ def encode(s):
 
 
 def postorder(u):
-    if isinstance(u, node):
+    if isinstance(u, smop.node.node):
         for v in u:
             for t in postorder(v):
                 yield t

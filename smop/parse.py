@@ -559,11 +559,11 @@ def p_funcall_expr(p):
     | expr LPAREN RPAREN
     """
     if (
-        len(p) == 5
-        and len(p[3]) == 1
-        and p[3][0].__class__ is node.expr
-        and p[3][0].op == ":"
-        and not p[3][0].args
+            len(p) == 5
+            and len(p[3]) == 1
+            and p[3][0].__class__ is node.expr
+            and p[3][0].op == ":"
+            and not p[3][0].args
     ):
         # foo(:) => ravel(foo)
         p[0] = node.funcall(func_expr=node.ident("ravel"), args=node.expr_list([p[1]]))
@@ -863,7 +863,6 @@ def parse(buf):
     #        return None  # p[i] is a func decl
 
     return p
-
 
 #    for j in range(i+1,len(p)):
 #        if i < j and isinstance(p[j], node.func_stmt):
