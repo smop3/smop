@@ -1,0 +1,1 @@
+clear('id_sw','sw_tmp')

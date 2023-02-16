@@ -269,7 +269,13 @@ def _backend(self, level=0):
             self.args._backend(),
             self.nargout,
         )
-    return code % s
+    statements = code % s
+    # 特殊处理 clear() 函数，自动添加被 clear 的变量声明语句，已解决没有定义变量的问题
+    if self.func_expr.name == 'clear':
+        for var in self.args:
+            statements += "\n" + indent * level
+            statements += "%s=matlabarray()" % var.value
+    return statements
 
 @extend(node.global_list)
 def _backend(self, level=0):
