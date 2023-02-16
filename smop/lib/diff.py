@@ -1,5 +1,7 @@
+# -*- encoding: utf8 -*-
+
 import numpy as np
-from smop.libsmop import *
+from .libsmop import matlabarray
 
 
 def diff(X, n=1, dim=1):

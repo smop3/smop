@@ -26,7 +26,7 @@ def print_header(fp):
     template = f"""# -*- encoding: {options.encoding} -*-
 # Generated with SMOP {version.__version__} Improved by 杨波@塔尔旺科技 2023
 try:
-    from smop.libsmop import *
+    from smop.lib import *
 except ImportError:
     raise ImportError('File compiled with `smop3`, please install `smop3` to run it.') from None
 # {options.filename}

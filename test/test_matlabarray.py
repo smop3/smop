@@ -1,5 +1,5 @@
 # -*- encoding: utf8 -*-
-from smop.libsmop import *
+from smop.lib import *
 
 
 class test_matlabarray(unittest.TestCase):

@@ -695,6 +695,26 @@ def isscalar(a):
     except AttributeError:
         return np.isscalar(a)
 
+def isnan(a):
+    """
+    确定哪些数组元素为 NaN
+    TF = isnan(A)
+    TF = isnan(A) 返回一个逻辑数组，其中的 1 (true) 对应 A 中的 NaN 元素，0 (false) 对应其他元素。
+    如果 A 包含复数，则 isnan(A) 中的 1 对应实部或虚部为 NaN 值的元素，0 对应实部和虚部均非 NaN 值的元素。
+
+    >>> d = NA
+    >>> r = isnan(d)
+    >>> print(r)
+    True
+
+    >>> isnan(1)
+    False
+
+    >>> r=isnan(matlabarray([1, NA]))
+    >>> print(r)
+    [[False  True]]
+    """
+    return np.isnan(a)
 
 def length(a):
     try:
