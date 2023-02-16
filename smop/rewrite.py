@@ -9,8 +9,8 @@
 #
 import copy
 
-from smop import node
-from node import extend
+from . import node
+from .node import extend
 
 
 def graphviz(t, fp, func_name):

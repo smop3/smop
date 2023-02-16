@@ -1,4 +1,4 @@
-from smop.main import main
+from smop.__main__ import main
 
 if __name__ == "__main__":
     main()

@@ -7,14 +7,14 @@ import os
 import traceback
 from os.path import basename, splitext
 
-from smop import options
-from smop import parse
-from smop import resolve
-from smop import backend
-from smop import version
+from . import options
+from . import parse
+from . import resolve
+from . import backend
+from . import version
 
 from textwrap import dedent
-from rewrite import peep
+from .rewrite import peep
 
 
 def print_header(fp):
