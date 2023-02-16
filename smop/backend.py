@@ -1,6 +1,7 @@
 # -*- encoding: utf8 -*-
 # smop -- Simple Matlab to Python compiler
 # Copyright 2011-2016 Victor Leikehman
+# Copyright 2023 杨波
 
 """
 Calling conventions:
@@ -281,6 +282,9 @@ def _backend(self, level=0):
         self.name += "_"
     if self.init:
         return "%s=%s" % (self.name, self.init._backend())
+    # 将 NaN 改写为 NA
+    if self.name == 'NaN':
+        return 'NA'
     return self.name
 
 
@@ -304,14 +308,14 @@ def _backend(self, level=0):
 @extend(node.let)
 def _backend(self, level=0):
     if not options.no_numbers:
+        # 如果参数指定显示行号，那么写入行号
         t = "\n# %s:%s" % (options.filename, self.lineno)
         # level*indent)
     else:
         t = ""
 
     s = ""
-    # if self.args.__class__ is node.funcall:
-    #    self.args.nargout = self.nargout
+
     if self.ret.__class__ is node.expr and self.ret.op == ".":
         try:
             if self.ret.args[1].op == "parens":
@@ -326,7 +330,9 @@ def _backend(self, level=0):
                 self.ret.args[1]._backend(),
                 self.args._backend(),
             )
-    elif self.ret.__class__ is node.ident and self.args.__class__ is node.ident:
+    elif self.ret.__class__ is node.ident and \
+            self.args.__class__ is node.ident and self.args.name != "NaN":
+        # 左侧是标识符、右侧也是标识符，被认为是变量赋值，按 matlab 规则，赋值是拷贝，所以这里调用 copy() 函数，但我们要考虑右侧是 NaN 的情况
         s += "%s=copy(%s)" % (self.ret._backend(), self.args._backend())
     else:
         s += "%s=%s" % (self.ret._backend(), self.args._backend())
