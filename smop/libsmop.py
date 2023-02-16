@@ -3,6 +3,7 @@
 # Copyright 2014 Victor Leikehman
 # Copyright 2023 Bob Yang
 # MIT license
+
 import io
 
 import numpy
@@ -261,7 +262,7 @@ class matlabarray(np.ndarray):
                     new_shape = [(1 if s == 1 else n) for s in self.shape]
                 self.resize(new_shape, refcheck=0)
                 np.asarray(self).reshape(-1, order="F").__setitem__(indices, value)
-            else:   # self is not empty and indices length > 1
+            else:  # self is not empty and indices length > 1
                 new_shape = list(self.shape)
                 # print(f"\n--->new_shape={new_shape}, indices={self.sizeof(indices[0]), self.sizeof(indices[1])}")
                 # 杨波：下面这段话的意思是说，如果是 c连续布局，则可以添加行，添加行后矩阵原有形状会保持；
@@ -357,13 +358,13 @@ class cellarray(matlabarray):
         a : list, ndarray, matlabarray, etc.
 
         >>> a=cellarray([123,"hello"])
-        >>> print a.shape
+        >>> print(a.shape)
         (1, 2)
 
-        >>> print a[1]
+        >>> print(a[1])
         123
 
-        >>> print a[2]
+        >>> print(a[2])
         hello
         """
         obj = np.array(a, dtype=object, order="F", ndmin=2).view(cls).copy(order="F")
@@ -390,7 +391,7 @@ class cellstr(matlabarray):
     >>> s=cellstr(char('helloworldkitty').reshape(3,5))
     >>> s
     cellstr([['hello', 'world', 'kitty']], dtype=object)
-    >>> print s
+    >>> print(s)
     hello
     world
     kitty
@@ -406,7 +407,7 @@ class cellstr(matlabarray):
         """
         obj = (
             np.array(
-                ["".join(s) for s in a], dtype=object, copy=False, order="C", ndmin=2
+                [b''.join(s).decode('utf8') for s in a], dtype=object, copy=False, order="C", ndmin=2
             )
                 .view(cls)
                 .copy(order="F")
@@ -420,6 +421,10 @@ class cellstr(matlabarray):
 
     def __getitem__(self, index):
         return self.get(index)
+
+
+# matlab 的 reshape 函数，总是 F-order 列优先排列
+reshape = lambda *args: np.reshape(*args, order='F')
 
 
 class char(matlabarray):
@@ -439,7 +444,7 @@ class char(matlabarray):
 
     >>> s=char([104, 101, 108, 108, 111, 119, 111, 114, 108, 100])
     >>> s.shape = 2,5
-    >>> print s
+    >>> print(s)
     hello
     world
     """
@@ -459,13 +464,21 @@ class char(matlabarray):
     def __getitem__(self, index):
         return self.get(index)
 
+    # __str__ "computes the "informal" string representation of an object.
+    # This differs from __repr__ in that it does not have to be a valid Python expression:
+    # a more convenient or concise representation may be used instead."
+    # __repr__ 给人看的，不要求格式；
+    # __str__ 可以用作 string 字符串，等于 java 中的 toString()
+    def __repr__(self):
+        return self.__str__()
+
     def __str__(self):
         if self.ndim == 0:
             return ""
         if self.ndim == 1:
             return "".join(s for s in self)
         if self.ndim == 2:
-            return "\n".join("".join(s) for s in self)
+            return "\n".join(b''.join(s).decode('utf8') for s in self)
         raise NotImplementedError
 
 
@@ -502,13 +515,13 @@ def arange(start, stop, step=1, **kwargs):
     )
 
 
-def concat(args):
+def concat(*args):
     """
-    >>> concat([1,2,3,4,5] , [1,2,3,4,5]])
-    [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]
+    >>> concat([1,2,3,4,5] , [1,2,3,4,5])
+    matlabarray([[1, 2, 3, 4, 5, 1, 2, 3, 4, 5]])
     """
     t = [matlabarray(a) for a in args]
-    return np.concatenate(t)
+    return matlabarray(np.concatenate(t, axis=1))   # 沿列维度追加
 
 
 def ceil(a):

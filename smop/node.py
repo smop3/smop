@@ -455,9 +455,9 @@ class cellarray(expr):
 class matrix(builtins):
     """
     Anything enclosed in square brackets counts as matrix
-    >>> print matrix([1,2,3])
+    >>> print(matrix([1,2,3]))
     [1,2,3]
-    >>> print matrix()
+    >>> print(matrix())
     []
     """
 
