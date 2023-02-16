@@ -250,17 +250,25 @@ def %s(%s):
 @extend(node.funcall)
 def _backend(self, level=0):
     # import pdb; pdb.set_trace()
-    if not self.nargout or self.nargout == 1:
-        return "%s(%s)" % (self.func_expr._backend(), self.args._backend())
-    elif not self.args:
-        return "%s(nargout=%s)" % (self.func_expr._backend(), self.nargout)
+
+    # 杨波：特殊处理 load() 函数
+    # load('a') => workspace_.update(load('a'))
+    if self.func_expr.name == 'load':
+        # TODO 如果函数调用在赋值语句中则不添加
+        code = "workspace_.update(%s)"
     else:
-        return "%s(%s,nargout=%s)" % (
+        code = "%s"
+    if not self.nargout or self.nargout == 1:
+        s = "%s(%s)" % (self.func_expr._backend(), self.args._backend())
+    elif not self.args:
+        s = "%s(nargout=%s)" % (self.func_expr._backend(), self.nargout)
+    else:
+        s = "%s(%s,nargout=%s)" % (
             self.func_expr._backend(),
             self.args._backend(),
             self.nargout,
         )
-
+    return code % s
 
 @extend(node.global_list)
 def _backend(self, level=0):

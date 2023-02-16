@@ -1,6 +1,7 @@
 # -*- encoding: utf8 -*-
 # smop -- Matlab to Python compiler
 # Copyright 2011-2013 Victor Leikehman
+# Copyright 2023- 杨波
 """
 if i.defs:
     i is defined, possibly more than once.
