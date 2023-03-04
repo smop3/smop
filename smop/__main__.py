@@ -1,5 +1,7 @@
+# -*- encoding: utf8 -*-
 # SMOP -- Simple Matlab/Octave to Python compiler
 # Copyright 2011-2016 Victor Leikehman
+import glob
 import sys
 import os
 import traceback
@@ -11,21 +13,28 @@ from . import resolve
 from . import backend
 from . import version
 
+from textwrap import dedent
+from .rewrite import peep
+
 
 def print_header(fp):
     if options.no_header:
         return
     # print("# Running Python %s" % sys.version, file=fp)
-    print("# Generated with SMOP ", version.__version__, file=fp)
-    print("try:", file=fp)
-    print("    from smop.libsmop import *", file=fp)
-    print("except ImportError:", file=fp)
-    print(
-        "    raise ImportError('File compiled with `smop3`,",
-        "please install `smop3` to run it.') from None",
-        file=fp
-    )
-    print("#", options.filename, file=fp)
+    # context = locals()
+    # context.update(options=options, version=version)
+    template = f"""# -*- encoding: {options.encoding} -*-
+# Generated with SMOP {version.__version__} Improved by 杨波@塔尔旺科技 2023
+try:
+    from smop.lib import *
+except ImportError:
+    raise ImportError('File compiled with `smop3`, please install `smop3` to run it.') from None
+# {options.filename}
+
+# simulate matlab workspace
+workspace_ = locals()
+"""
+    print(template, file=fp)
 
 
 def main():
@@ -33,13 +42,16 @@ def main():
         import pdb
 
         pdb.set_trace()
+    # implement glob pattern
+    if options.glob_pattern:
+        options.filelist += glob.glob(options.glob_pattern)
     if not options.filelist:
         options.parser.print_help()
         return
     if options.output == "-":
         fp = sys.stdout
     elif options.output:
-        fp = open(options.output, "w")
+        fp = open(options.output, "w", encoding=options.encoding)
     else:
         fp = None
     if fp:
@@ -57,7 +69,7 @@ def main():
                 if options.verbose:
                     print("\tExcluded: '%s'" % options.filename)
                 continue
-            buf = open(options.filename).read()
+            buf = open(options.filename, encoding=options.encoding).read()
             buf = buf.replace("\r\n", "\n")
             # FIXME buf = buf.decode("ascii", errors="ignore")
             stmt_list = parse.parse(buf if buf[-1] == "\n" else buf + "\n")
@@ -67,10 +79,18 @@ def main():
             if not options.no_resolve:
                 G = resolve.resolve(stmt_list)
             if not options.no_backend:
+                # 重写 ast 树
+                peep(stmt_list)
                 s = backend.backend(stmt_list)
             if not options.output:
                 f = splitext(basename(options.filename))[0] + ".py"
-                with open(f, "w") as fp:
+                output_dir = "."
+                if options.output_directory:
+                    output_dir = options.output_directory
+                f = output_dir + "/" + f
+                if options.verbose:
+                    print("output: ", f)
+                with open(f, "w", encoding=options.encoding) as fp:
                     print_header(fp)
                     fp.write(s)
             else:
@@ -86,6 +106,7 @@ def main():
             pass
     if nerrors:
         print("Errors:", nerrors)
+
 
 if __name__ == "__main__":
     print("Running main")

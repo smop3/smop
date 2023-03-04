@@ -7,6 +7,7 @@ import copy, sys, inspect
 
 from .recipes import recordtype
 from . import options
+import smop
 
 # def preorder(u):
 #     if isinstance(u,traversable):
@@ -34,7 +35,7 @@ def encode(s):
 
 
 def postorder(u):
-    if isinstance(u, node):
+    if isinstance(u, smop.node.node):
         for v in u:
             for t in postorder(v):
                 yield t
@@ -454,9 +455,9 @@ class cellarray(expr):
 class matrix(builtins):
     """
     Anything enclosed in square brackets counts as matrix
-    >>> print matrix([1,2,3])
+    >>> print(matrix([1,2,3]))
     [1,2,3]
-    >>> print matrix()
+    >>> print(matrix())
     []
     """
 

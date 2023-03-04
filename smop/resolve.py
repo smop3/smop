@@ -1,5 +1,7 @@
+# -*- encoding: utf8 -*-
 # smop -- Matlab to Python compiler
 # Copyright 2011-2013 Victor Leikehman
+# Copyright 2023- 杨波
 """
 if i.defs:
     i is defined, possibly more than once.
@@ -16,6 +18,10 @@ symtab is a temporary variable, which maps
 variable names (strings) to sets of ident
 instances, which possibly define the variable.
 It is used in if_stmt, for_stmt, and while_stmt.
+
+杨波：这个模块的作用是被 parser 调用，生成AST抽象语法树、语句列表，供后端 backend.py 使用。
+AST 语法树用 networkx 来创建。
+
 """
 
 import copy
@@ -37,18 +43,23 @@ def as_networkx(t):
                     if v.__class__ is node.ident:
                         vv = "%s_%s_%s" % (v.name, v.lineno, v.column)
                         G.add_node(vv, ident=v)
-                        if u.lexpos < v.lexpos:
+                        # fix issue that u.lexpos or v.lexpos is None
+                        if u.lexpos and v.lexpos and u.lexpos < v.lexpos:
                             G.add_edge(uu, vv, color="red")
                         else:
                             G.add_edge(uu, vv, color="black")
     return G
 
 
-def resolve(t, symtab=None, fp=None, func_name=None):
+def resolve(statement_list, symtab=None, fp=None, func_name=None):
+    """解析出变量，并给变量添加类型说明，但生成代码时并没有用到"""
     if symtab is None:
-        symtab = {}
-    do_resolve(t, symtab)
-    G = as_networkx(t)
+        symtab = {}     # 存放变量名
+    do_resolve(statement_list, symtab)
+    G = as_networkx(statement_list)
+    # R ref    =...a  or  =...a(b)
+    # D def    a=...  or   [a,b,c]=...
+    # U update a(b)=...  or  [a(b) c(d)]=...
     for n in G.nodes():
         u = G.nodes[n]["ident"]
         if u.props:

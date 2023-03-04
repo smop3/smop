@@ -1,7 +1,10 @@
+# -*- encoding: utf8 -*-
 # SMOP compiler runtime support library
 # Copyright 2014 Victor Leikehman
-
+# Copyright 2023 Bob Yang
 # MIT license
+
+import io
 
 import numpy
 from numpy import sqrt, prod, exp, log, dot, multiply, inf
@@ -25,6 +28,25 @@ except:
 import unittest
 from scipy.special import gamma
 from numpy import rint as fix
+from scipy.stats import norm
+
+
+def close(*args):
+    pass
+
+
+def close_(*args):
+    pass
+
+
+def clear(*args):
+    pass
+
+
+def normcdf(x): return norm.cdf(x)
+
+
+def normpdf(x): return norm.pdf(x)
 
 
 def isvector_or_scalar(a):
@@ -68,8 +90,8 @@ class matlabarray(np.ndarray):
     def __new__(cls, a=[], dtype=None):
         obj = (
             np.array(a, dtype=dtype, copy=False, order="F", ndmin=2)
-            .view(cls)
-            .copy(order="F")
+                .view(cls)
+                .copy(order="F")
         )
         if obj.size == 0:
             obj.shape = (0, 0)
@@ -94,8 +116,12 @@ class matlabarray(np.ndarray):
             if ix.__class__ is end:
                 indices.append(self.shape[i] - 1 + ix.n)
             elif ix.__class__ is slice:
+                # To support 'empty matrix' insert columns, we should use slice like 'a[:len(col), 2] = col'.
                 if self.size == 0 and ix.stop is None:
-                    raise IndexError
+                    # raise IndexError
+                    # use empty array as ':' range index
+                    indices.append(np.empty(0))
+                    continue
                 if len(index) == 1:
                     n = self.size
                 else:
@@ -111,7 +137,9 @@ class matlabarray(np.ndarray):
                 except:
                     indices.append(np.asarray(ix).astype("int32") - 1)
         if len(indices) == 2 and isvector(indices[0]) and isvector(indices[1]):
+            # as column vector (N,1)
             indices[0].shape = (-1, 1)
+            # as row vector (N,)
             indices[1].shape = (-1,)
         return tuple(indices)
 
@@ -139,12 +167,18 @@ class matlabarray(np.ndarray):
         self.__setitem__(index, value)
 
     def sizeof(self, ix):
+        """size of index
+        @return -1 if index is empty array.
+        """
         if isinstance(ix, int):
             n = ix + 1
         elif isinstance(ix, slice):
             n = ix.stop
         elif isinstance(ix, (list, np.ndarray)):
-            n = max(ix) + 1
+            if len(ix) == 0:
+                n = -1
+            else:
+                n = int(max(ix)) + 1
         else:
             assert 0, ix
         if not isinstance(n, int):
@@ -152,6 +186,14 @@ class matlabarray(np.ndarray):
         return n
 
     def __setitem__(self, index, value):
+        """Support insert at any column index, padds with 0-column:
+            a = matlabarray()
+            a[:, 2] = [1,2,3]
+        Get:
+            a[[0, 1],
+              [0, 2],
+              [0, 3]]
+        """
         # import pdb; pdb.set_trace()
         indices = self.compute_indices(index)
         try:
@@ -159,12 +201,41 @@ class matlabarray(np.ndarray):
                 np.asarray(self).reshape(-1, order="F").__setitem__(indices, value)
             else:
                 np.asarray(self).__setitem__(indices, value)
-        except (ValueError, IndexError):
+        except (ValueError, IndexError) as exception:
             # import pdb; pdb.set_trace()
+
+            # if the self matrix is empty
             if not self.size:
-                new_shape = [self.sizeof(s) for s in indices]
+                # One-dimensional assignment to empty array should get empty array.
+                if len(indices) == 1 and self.sizeof(indices[0]) < 0:
+                    if isvector(value) or isinstance(value, (list, tuple, slice)):
+                        raise ValueError("Can not assign, right-value must have the same size as left-value!")
+                    # don't assign
+                    return
+                new_shape = []
+                new_indices = []
+                # deal with empty index array
+                for i, s in enumerate(indices):
+                    size_of_index = self.sizeof(s)
+                    if size_of_index < 0:
+                        # empty array index, use value shape size or length of list
+                        if isinstance(value, np.ndarray):
+                            size_of_index = value.shape[i]
+                        elif isscalar(value):
+                            size_of_index = 1
+                        else:
+                            size_of_index = len(value)
+                        new_indices.append(np.arange(0, size_of_index, 1, dtype=int))
+                    else:
+                        new_indices.append(s)
+                    new_shape.append(size_of_index)
+                # to increase matrix space, resize self to the same shape as indices
                 self.resize(new_shape, refcheck=0)
-                np.asarray(self).__setitem__(indices, value)
+                # if value is column vector, make it row vector, because python slice always be row vector
+                row_vector = value
+                if isinstance(value, np.ndarray) and value.shape[0] > 1:
+                    row_vector = value.transpose()
+                np.asarray(self).__setitem__(tuple(new_indices), row_vector)
             elif len(indices) == 1:
                 # One-dimensional resize is only implemented for
                 # two cases:
@@ -191,14 +262,61 @@ class matlabarray(np.ndarray):
                     new_shape = [(1 if s == 1 else n) for s in self.shape]
                 self.resize(new_shape, refcheck=0)
                 np.asarray(self).reshape(-1, order="F").__setitem__(indices, value)
-            else:
+            else:  # self is not empty and indices length > 1
                 new_shape = list(self.shape)
-                if self.flags["C_CONTIGUOUS"]:
+                # print(f"\n--->new_shape={new_shape}, indices={self.sizeof(indices[0]), self.sizeof(indices[1])}")
+                # 杨波：下面这段话的意思是说，如果是 c连续布局，则可以添加行，添加行后矩阵原有形状会保持；
+                # 如果是 fortran连续布局，则可以添加列，添加列后矩阵原有形状会保持；
+                # 如果不是这样，那么 resize 添加0后，会改变矩阵内容，原矩阵会被改变。
+                # 所以我们需要根据是加行，还是加列，来修改‘连续性’。
+                # if self.flags["C_CONTIGUOUS"]:
+                #     new_shape[0] = self.sizeof(indices[0])
+                # elif self.flags["F_CONTIGUOUS"]:
+                #     new_shape[-1] = self.sizeof(indices[-1])
+                if len(new_shape) > 2:
+                    raise IndexError("Can only support 2-dimension array to insert row or column vector!")
+                # 加‘行’的情况
+                add_row = False
+                if self.sizeof(indices[0]) > new_shape[0]:
+                    add_row = True
+                # 加‘列’的情况
+                add_col = False
+                if self.sizeof(indices[1]) > new_shape[1]:
+                    add_col = True
+                # 不允许同时加行和列
+                if add_row and add_col:
+                    raise IndexError("Can not increase row and column at same time!")
+                # if value is column vector, make it row vector, because python slice always be row vector
+                row_vector = value
+                if isinstance(value, np.ndarray) and value.shape[0] > 1:
+                    row_vector = value.transpose()
+                if add_row:
                     new_shape[0] = self.sizeof(indices[0])
-                elif self.flags["F_CONTIGUOUS"]:
-                    new_shape[-1] = self.sizeof(indices[-1])
-                self.resize(new_shape, refcheck=0)
-                np.asarray(self).__setitem__(indices, value)
+                    if not self.flags["C_CONTIGUOUS"]:
+                        # 强制变为 C_CONTIGUOUS
+                        c = np.asarray(self, order='C')
+                        c.resize(new_shape, refcheck=0)
+                        c.__setitem__(indices, row_vector)
+                        self.resize(new_shape, refcheck=0)
+                        np.copyto(self, c)
+                    else:
+                        self.resize(new_shape, refcheck=0)
+                        np.asarray(self).__setitem__(indices, row_vector)
+                elif add_col:
+                    new_shape[1] = self.sizeof(indices[1])
+                    if not self.flags["F_CONTIGUOUS"]:
+                        # 强制变为 F_CONTIGUOUS
+                        c = np.asarray(self, order='F')
+                        c.resize(new_shape, refcheck=0)
+                        c.__setitem__(indices, row_vector)
+                        self.resize(new_shape, refcheck=0)
+                        np.copyto(self, c)
+                    else:
+                        self.resize(new_shape, refcheck=0)
+                        np.asarray(self).__setitem__(indices, row_vector)
+                else:
+                    # 只是不能设置 列向量 value 才走到这里
+                    np.asarray(self).__setitem__(indices, row_vector)
 
     def __repr__(self):
         return self.__class__.__name__ + repr(np.asarray(self))[5:]
@@ -240,13 +358,13 @@ class cellarray(matlabarray):
         a : list, ndarray, matlabarray, etc.
 
         >>> a=cellarray([123,"hello"])
-        >>> print a.shape
+        >>> print(a.shape)
         (1, 2)
 
-        >>> print a[1]
+        >>> print(a[1])
         123
 
-        >>> print a[2]
+        >>> print(a[2])
         hello
         """
         obj = np.array(a, dtype=object, order="F", ndmin=2).view(cls).copy(order="F")
@@ -273,7 +391,7 @@ class cellstr(matlabarray):
     >>> s=cellstr(char('helloworldkitty').reshape(3,5))
     >>> s
     cellstr([['hello', 'world', 'kitty']], dtype=object)
-    >>> print s
+    >>> print(s)
     hello
     world
     kitty
@@ -289,10 +407,10 @@ class cellstr(matlabarray):
         """
         obj = (
             np.array(
-                ["".join(s) for s in a], dtype=object, copy=False, order="C", ndmin=2
+                [b''.join(s).decode('utf8') for s in a], dtype=object, copy=False, order="C", ndmin=2
             )
-            .view(cls)
-            .copy(order="F")
+                .view(cls)
+                .copy(order="F")
         )
         if obj.size == 0:
             obj.shape = (0, 0)
@@ -303,6 +421,10 @@ class cellstr(matlabarray):
 
     def __getitem__(self, index):
         return self.get(index)
+
+
+# matlab 的 reshape 函数，总是 F-order 列优先排列
+reshape = lambda *args: np.reshape(*args, order='F')
 
 
 class char(matlabarray):
@@ -322,7 +444,7 @@ class char(matlabarray):
 
     >>> s=char([104, 101, 108, 108, 111, 119, 111, 114, 108, 100])
     >>> s.shape = 2,5
-    >>> print s
+    >>> print(s)
     hello
     world
     """
@@ -332,8 +454,8 @@ class char(matlabarray):
             a = "".join([chr(c) for c in a])
         obj = (
             np.array(list(a), dtype="|S1", copy=False, order="F", ndmin=2)
-            .view(cls)
-            .copy(order="F")
+                .view(cls)
+                .copy(order="F")
         )
         if obj.size == 0:
             obj.shape = (0, 0)
@@ -342,13 +464,21 @@ class char(matlabarray):
     def __getitem__(self, index):
         return self.get(index)
 
+    # __str__ "computes the "informal" string representation of an object.
+    # This differs from __repr__ in that it does not have to be a valid Python expression:
+    # a more convenient or concise representation may be used instead."
+    # __repr__ 给人看的，不要求格式；
+    # __str__ 可以用作 string 字符串，等于 java 中的 toString()
+    def __repr__(self):
+        return self.__str__()
+
     def __str__(self):
         if self.ndim == 0:
             return ""
         if self.ndim == 1:
             return "".join(s for s in self)
         if self.ndim == 2:
-            return "\n".join("".join(s) for s in self)
+            return "\n".join(b''.join(s).decode('utf8') for s in self)
         raise NotImplementedError
 
 
@@ -385,13 +515,13 @@ def arange(start, stop, step=1, **kwargs):
     )
 
 
-def concat(args):
+def concat(*args):
     """
-    >>> concat([1,2,3,4,5] , [1,2,3,4,5]])
-    [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]
+    >>> concat([1,2,3,4,5] , [1,2,3,4,5])
+    matlabarray([[1, 2, 3, 4, 5, 1, 2, 3, 4, 5]])
     """
     t = [matlabarray(a) for a in args]
-    return np.concatenate(t)
+    return matlabarray(np.concatenate(t, axis=1))   # 沿列维度追加
 
 
 def ceil(a):
@@ -497,7 +627,7 @@ def fflush(fp):
 
 
 def fprintf(fp, fmt, *args):
-    if not isinstance(fp, file):
+    if not isinstance(fp, io.IOBase):
         fp = stdout
     fp.write(str(fmt) % args)
 
@@ -566,6 +696,29 @@ def isscalar(a):
         return np.isscalar(a)
 
 
+def isnan(a):
+    """
+    确定哪些数组元素为 NaN
+    TF = isnan(A)
+    TF = isnan(A) 返回一个逻辑数组，其中的 1 (true) 对应 A 中的 NaN 元素，0 (false) 对应其他元素。
+
+    未实现、测试：如果 A 包含复数，则 isnan(A) 中的 1 对应实部或虚部为 NaN 值的元素，0 对应实部和虚部均非 NaN 值的元素。
+
+    >>> d = NA
+    >>> r = isnan(d)
+    >>> print(r)
+    True
+
+    >>> isnan(1)
+    False
+
+    >>> r=isnan(matlabarray([1, NA]))
+    >>> print(r)
+    [[False  True]]
+    """
+    return np.isnan(a)
+
+
 def length(a):
     try:
         return max(np.asarray(a).shape)
@@ -574,10 +727,8 @@ def length(a):
 
 
 try:
-
     def load(a):
         return loadmat(a)  # FIXME
-
 except:
     pass
 
@@ -690,7 +841,6 @@ def ravel(a):
 
 
 def roots(a):
-
     return matlabarray(np.roots(np.asarray(a).ravel()))
 
 
@@ -712,7 +862,7 @@ def size(a, b=0, nargout=1):
     matlabarray([[4, 4]])
     """
     s = np.asarray(a).shape
-    if s is ():
+    if s == ():
         return 1 if b else (1,) * nargout
     # a is not a scalar
     try:

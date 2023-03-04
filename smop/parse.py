@@ -332,7 +332,7 @@ def p_expr2(p):
         # to XXX. These lines handle the case where
         # an undefined array is updated:
         #    >>> clear a
-        #    >>> a[1:10]=123
+        #    >>> a(1:10)=123
         # Though legal in matlab, these lines
         # confuse the algorithm, which thinks that
         # the undefined variable is a function name.
@@ -528,7 +528,7 @@ def p_for_stmt(p):
 @exceptions
 def p_func_stmt(p):
     """func_stmt : FUNCTION ident lambda_args SEMI
-    | FUNCTION ret EQ ident lambda_args SEMI
+                 | FUNCTION ret EQ ident lambda_args SEMI
     """
     # stmt_list of func_stmt is set below
     # marked with XYZZY
@@ -559,11 +559,11 @@ def p_funcall_expr(p):
     | expr LPAREN RPAREN
     """
     if (
-        len(p) == 5
-        and len(p[3]) == 1
-        and p[3][0].__class__ is node.expr
-        and p[3][0].op == ":"
-        and not p[3][0].args
+            len(p) == 5
+            and len(p[3]) == 1
+            and p[3][0].__class__ is node.expr
+            and p[3][0].op == ":"
+            and not p[3][0].args
     ):
         # foo(:) => ravel(foo)
         p[0] = node.funcall(func_expr=node.ident("ravel"), args=node.expr_list([p[1]]))
@@ -613,7 +613,7 @@ def p_if_stmt(p):
 @exceptions
 def p_lambda_args(p):
     """lambda_args : LPAREN RPAREN
-    | LPAREN arg_list RPAREN
+                   | LPAREN arg_list RPAREN
     """
     p[0] = p[2] if len(p) == 4 else node.expr_list()
 
@@ -627,10 +627,10 @@ def p_lambda_expr(p):
 @exceptions
 def p_matrix(p):
     """matrix : LBRACKET RBRACKET
-    | LBRACKET concat_list RBRACKET
-    | LBRACKET concat_list SEMI RBRACKET
-    | LBRACKET expr_list RBRACKET
-    | LBRACKET expr_list SEMI RBRACKET
+              | LBRACKET concat_list RBRACKET
+              | LBRACKET concat_list SEMI RBRACKET
+              | LBRACKET expr_list RBRACKET
+              | LBRACKET expr_list SEMI RBRACKET
     """
     if len(p) == 3:
         p[0] = node.matrix()
@@ -863,7 +863,6 @@ def parse(buf):
     #        return None  # p[i] is a func decl
 
     return p
-
 
 #    for j in range(i+1,len(p)):
 #        if i < j and isinstance(p[j], node.func_stmt):

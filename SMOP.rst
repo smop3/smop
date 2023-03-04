@@ -147,10 +147,10 @@ Term T is::
 
 Terms end with::
 
-  1. an alphanumeric charater \w
+  1. an alphanumeric character \w
   2. single quote (in octave also double-quote)
   3. right parenthesis, bracket, or brace
-  4. a dot (after a number, such as 3. 
+  4. a dot (after a number, such as 3).
 
 The pattern for whitespace accounts for ellipsis as a whitespace, and
 for the trailing junk.
@@ -201,7 +201,7 @@ string and cellarray literals, and upon return from any function
 -- either library or user defined.  This looks terrible.
 
 Another possibility is to wrap the function arguments inside the
-function
+function.
 
 Base-one indexing
 -----------------
@@ -348,6 +348,36 @@ one, like here::
 
   octave> "hello""world"
   hello"world
+
+Load Matlab file
+----------------
+
+The matlab load() function will load the .mat data file into workspace. While python have no such concept of workspace.
+The workspace like local namespace of python.
+
+If the load() function call assign to result variable then the loaded variable should be fields of the result object.
+
+Calling statement have result assignment:
+
+    result = load("a.mat")
+
+If the load() function call do not assign to any result variable then the loaded variable should be put into the local
+namespace.
+
+Calling statement have no result assignment:
+
+    load("a.mat")
+
+Implement notes: Python can not modify local variables. So we have to define a special 'workspace' variable resolution
+
+Insert column
+-------------
+
+Support matlab code like: ::
+
+    data_geo = []
+    data_geo(:,1)=col1;
+    data_geo(:,2)=col2;
 
 ----------------------------------------------------------------------
 

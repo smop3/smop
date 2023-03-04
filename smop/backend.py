@@ -1,5 +1,7 @@
+# -*- encoding: utf8 -*-
 # smop -- Simple Matlab to Python compiler
 # Copyright 2011-2016 Victor Leikehman
+# Copyright 2023 杨波
 
 """
 Calling conventions:
@@ -38,8 +40,8 @@ optable = {
 }
 
 
-def backend(t, *args, **kwargs):
-    return t._backend(level=1, *args, **kwargs)
+def backend(statement_list, *args, **kwargs):
+    return statement_list._backend(level=0, *args, **kwargs)
 
 
 # Sometimes user's variable names in the matlab code collide with Python
@@ -65,6 +67,7 @@ reserved = set(
     len
     """.split()
 )
+
 
 # acos  asin atan  cos e
 # exp   fabs floor log log10
@@ -163,7 +166,11 @@ def _backend(self, level=0):
                 self.args[1]._backend(),
             )
     if self.op == ":":
-        return "arange(%s)" % self.args._backend()
+        # support `a(:,1)=[1,2,3]` => `a[:,1]=[1,2,3]`
+        if len(self.args):
+            return "arange(%s)" % self.args._backend()
+        else:
+            return ":"
 
     if self.op == "end":
         #        if self.args:
@@ -228,8 +235,7 @@ def _backend(self, level=0):
 def _backend(self, level=0):
     self.args.append(node.ident("*args"))
     self.args.append(node.ident("**kwargs"))
-    s = """
-@function
+    s = """@function
 def %s(%s):
     varargin = %s.varargin
     nargin = %s.nargin
@@ -245,17 +251,31 @@ def %s(%s):
 @extend(node.funcall)
 def _backend(self, level=0):
     # import pdb; pdb.set_trace()
-    if not self.nargout or self.nargout == 1:
-        return "%s(%s)" % (self.func_expr._backend(), self.args._backend())
-    elif not self.args:
-        return "%s(nargout=%s)" % (self.func_expr._backend(), self.nargout)
+
+    # 杨波：特殊处理 load() 函数
+    # load('a') => workspace_.update(load('a'))
+    if self.func_expr.name == 'load':
+        # TODO 如果函数调用在赋值语句中则不添加
+        code = "workspace_.update(%s)"
     else:
-        return "%s(%s,nargout=%s)" % (
+        code = "%s"
+    if not self.nargout or self.nargout == 1:
+        s = "%s(%s)" % (self.func_expr._backend(), self.args._backend())
+    elif not self.args:
+        s = "%s(nargout=%s)" % (self.func_expr._backend(), self.nargout)
+    else:
+        s = "%s(%s,nargout=%s)" % (
             self.func_expr._backend(),
             self.args._backend(),
             self.nargout,
         )
-
+    statements = code % s
+    # 特殊处理 clear() 函数，自动添加被 clear 的变量声明语句，已解决没有定义变量的问题
+    if self.func_expr.name == 'clear':
+        for var in self.args:
+            statements += "\n" + indent * level
+            statements += "%s=matlabarray()" % var.value
+    return statements
 
 @extend(node.global_list)
 def _backend(self, level=0):
@@ -268,6 +288,9 @@ def _backend(self, level=0):
         self.name += "_"
     if self.init:
         return "%s=%s" % (self.name, self.init._backend())
+    # 将 NaN 改写为 NA
+    if self.name == 'NaN':
+        return 'NA'
     return self.name
 
 
@@ -291,14 +314,14 @@ def _backend(self, level=0):
 @extend(node.let)
 def _backend(self, level=0):
     if not options.no_numbers:
+        # 如果参数指定显示行号，那么写入行号
         t = "\n# %s:%s" % (options.filename, self.lineno)
         # level*indent)
     else:
         t = ""
 
     s = ""
-    # if self.args.__class__ is node.funcall:
-    #    self.args.nargout = self.nargout
+
     if self.ret.__class__ is node.expr and self.ret.op == ".":
         try:
             if self.ret.args[1].op == "parens":
@@ -313,7 +336,9 @@ def _backend(self, level=0):
                 self.ret.args[1]._backend(),
                 self.args._backend(),
             )
-    elif self.ret.__class__ is node.ident and self.args.__class__ is node.ident:
+    elif self.ret.__class__ is node.ident and \
+            self.args.__class__ is node.ident and self.args.name != "NaN":
+        # 左侧是标识符、右侧也是标识符，被认为是变量赋值，按 matlab 规则，赋值是拷贝，所以这里调用 copy() 函数，但我们要考虑右侧是 NaN 的情况
         s += "%s=copy(%s)" % (self.ret._backend(), self.args._backend())
     else:
         s += "%s=%s" % (self.ret._backend(), self.args._backend())
@@ -334,7 +359,8 @@ def _backend(self, level=0):
     # size([])
     # 0 0
     if not self.args:
-        return "[]"
+        # create matlabarray object
+        return "matlabarray()"
     elif any(a.__class__ is node.string for a in self.args):
         return " + ".join(a._backend() for a in self.args)
     else:
@@ -373,15 +399,26 @@ def _backend(self, level=0):
         return "return %s" % self.ret._backend()
 
 
+# 代码语句列表，也是编译backend的入口
 @extend(node.stmt_list)
 def _backend(self, level=0):
-    for t in self:
-        if not isinstance(t, (node.null_stmt, node.comment_stmt)):
+    # 跳过注释和空语句行
+    for statement in self:
+        if not isinstance(statement, (node.null_stmt, node.comment_stmt)):
             break
+    # 如果全部语句都是空，那么添加一条 pass 语句
     else:
         self.append(node.pass_stmt())
-    sep = "\n" + indent * level
-    return sep + sep.join([t._backend(level) for t in self])
+    code = ""
+    # matlab 函数通常占用整个文件，所以这里偷懒，直接设置 level=1 开始，即总是缩进
+    for statement in self:
+        sep = "\n" + indent * level
+        code += (sep + statement._backend(level))
+        # 函数定义后的语句都增加缩进
+        if isinstance(statement, node.func_stmt):
+            level += 1
+    # return sep + sep.join([statement._backend(level) for statement in self])
+    return code
 
 
 @extend(node.string)

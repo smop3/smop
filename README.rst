@@ -90,7 +90,7 @@ Command-line options
 The command line interface can be accessed using either the ``smop`` command,
 or if wrappers are unavailable on your system ``python -m smop`` can be used:
 
-..code-block:: bash
+.. code-block:: bash
 
   python -m smop
 
@@ -100,11 +100,20 @@ or if wrappers are unavailable on your system ``python -m smop`` can be used:
   Usage: smop [options] file-list
       Options:
       -V --version
+      -g PATTERN, --glob-pattern PATTERN
+                              Apply unix glob pattern to the input file list or to files. For
+                              example -g 'octave-4.0.2/*.m'
+      -e ENCODING, --encoding ENCODING
+                              File encoding, for example -e GBK. Default is 'utf-8'.
+      -d OUTPUT_DIR, --output-directory OUTPUT_DIR
+                              Write the results to directory. If not specified explicitly, output file names are
+                              derived from input file names by replacing ".m" with ".py".  For example,
+                              $ smop -d output/
       -X --exclude=FILES      Ignore files listed in comma-separated list FILES
-      -d --dot=REGEX          For functions whose names match REGEX, save debugging
+      -t --dot=REGEX          For functions whose names match REGEX, save debugging
                               information in "dot" format (see www.graphviz.org).
                               You need an installation of graphviz to use --dot
-                              option.  Use "dot" utility to create a pdf file.
+                              option.  Use "dot" utility to create a pdf file. [not implemented yet]
                               For example:
                                   $ python main.py fastsolver.m -d "solver|cbest"
                                   $ dot -Tpdf -o resolve_solver.pdf resolve_solver.dot
@@ -113,3 +122,33 @@ or if wrappers are unavailable on your system ``python -m smop`` can be used:
       -o- --output=-          Use standard output
       -s --strict             Stop on the first error
       -v --verbose
+
+
+To convert matlab code in direcotry c:\matlab to c:\python, the file use GBK encoding instead of utf8.
+
+.. code-block:: bash
+
+  smop -v -N -e gbk -g "c:\matlab\*.m" -d "c:\python"
+
+
+Change Log
+====================
+
+* 0.42-beta [bob.yang]
+
+    support -g "*.m" pattern of command argument.
+
+    support -e --encoding argument, to specify file encoding.
+
+    support -d --output-directory argument, to specify output directory.
+
+    add normcdf(), normpdf(), fix size(), fprintf() bug.
+
+    支持 a[:, 1] = [1,2,3] 这样插入列的方式
+
+    支持 a[1, :] = [1,2,3] 这样插入行的方式
+
+TODO
+====================
+
+* 修正 function-call 而非 array-ref 的问题，即将 array下标访问 当成了 函数访问。

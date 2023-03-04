@@ -1,6 +1,12 @@
+# -*- encoding: utf8 -*-
 # smop -- Matlab to Python compiler
 # Copyright 2018 Victor Leikehman
+# Copyright 2023 杨波
 
+# 说明：
+# node.func_expr.name 中是函数名。
+# n.__class__ is node.funcall 则 node 是函数调用语句
+#
 import copy
 
 from . import node
@@ -24,12 +30,22 @@ def graphviz(t, fp, func_name):
     fp.write("}\n")
 
 
+def load_func(u):
+    """给load()函数添加 workspace 模拟的语句，即：
+    load('a') ===编译为===> workspace_.update(load('a'))
+    但是发现 parse_tree 没有记录父节点，所以这里无法实现，后期再改这里，先在 backend.py 中实现一下。
+    """
+    if u.__class__ is node.funcall and u.func_expr.name == 'load':
+        pass
+
+
 def peep(parsetree):
-    for u in parsetree:
+    for u in node.postorder(parsetree):
         to_arrayref(u)
-        colon_indices_and_expressions(u)
-        end_expressions(u)
-        let_statement(u)
+        # load_func(u)
+        # colon_indices_and_expressions(u)
+        # end_expressions(u)
+        # let_statement(u)
 
 
 def to_arrayref(u):
@@ -40,8 +56,8 @@ def to_arrayref(u):
     """
     if u.__class__ is node.funcall:
         try:
-            if u.func_expr.props in "UR":  # upd,ref
-                u.__class__ = node.arrayref
+            if u.func_expr.props in "URD":  # upd,ref,def
+                u.__class__ = node.arrayref # 改为 array引用，这样就会生成 a[:,1] 而不是 a(:,1) 了
         except:
             pass  # FIXME
 
